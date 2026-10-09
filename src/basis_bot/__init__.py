@@ -1,0 +1,1 @@
+"""Funding-rate basis bot."""

@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Real configs and secrets never live in the repo.
+config/config.yaml
+secrets/
+deploy/.env
+*.secret
