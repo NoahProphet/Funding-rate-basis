@@ -1,0 +1,67 @@
+# Paths to the config and secrets come from deploy/.env (see .env.example).
+# Postgres is reachable only on the internal network; nothing is published.
+name: basis-bot
+
+x-bot: &bot
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+  image: basis-bot:dev
+  init: true
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  volumes:
+    - ${BASIS_BOT_CONFIG:?set BASIS_BOT_CONFIG in deploy/.env}:/etc/basis-bot/config.yaml:ro
+  secrets: [postgres_password]
+  networks: [internal]
+  logging: &logging
+    driver: json-file
+    options: {max-size: "20m", max-file: "10"}
+
+services:
+  postgres:
+    image: postgres:17-trixie@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: basis_bot
+      POSTGRES_USER: basis_bot
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TZ: UTC
+      PGTZ: UTC
+    secrets: [postgres_password]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U basis_bot -d basis_bot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+  migrate:
+    <<: *bot
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  core:
+    <<: *bot
+    restart: unless-stopped
+    stop_grace_period: 30s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+secrets:
+  postgres_password:
+    file: ${BASIS_BOT_SECRETS_DIR:?set BASIS_BOT_SECRETS_DIR in deploy/.env}/postgres_password
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+    internal: true
