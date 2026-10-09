@@ -1,0 +1,71 @@
+# Example config. Copy outside the repo (or to config/config.yaml, which is
+# gitignored) and edit. Unknown keys are rejected. Secrets never go here.
+# Risk defaults follow spec section 15; changing them needs operator sign-off.
+# A notional of 0 means "no position" until D3 is decided.
+
+venue:
+  name: TBD                    # D1
+  symbols: [BTC, ETH]          # D2
+
+strategy:
+  entry_apr: 0.15              # placeholder, set from backtest (D6)
+  exit_apr: 0.05
+  entry_confirm_periods: 3
+  exit_confirm_periods: 2
+  ema_periods: 6
+  expected_hold_days: 14
+  target_notional_usd:
+    BTC: 0                     # set per D3
+    ETH: 0
+
+risk:
+  max_total_notional_usd: 0    # set per D3
+  max_symbol_notional_usd: 0
+  max_perp_leverage: 2
+  min_liq_distance_pct: 40
+  warn_liq_distance_pct: 50
+  max_net_delta_usd: 50
+  max_daily_loss_pct_nav: 1.0
+  max_single_order_usd: 0      # set per D3
+  max_orders_per_minute: 30
+  max_data_staleness_s: 5
+  max_clock_drift_ms: 500
+  max_consecutive_api_errors: 5
+
+execution:
+  max_chunk_notional_usd: 0    # set per D3
+  max_slippage_bps: 5
+  max_hedge_slippage_bps: 20
+  hedge_timeout_s: 10
+
+reconcile:
+  interval_s: 30
+  qty_tolerance_ratio: 0.001
+
+control:
+  kill_flattens: false
+
+margin:                        # phase 6
+  topup_trigger_pct: 45
+  max_transfer_usd_per_hour: 0
+
+alerts:
+  dedup_window_s: 300
+  warn_escalate_after_s: 900
+  daily_summary_utc: "06:00"   # quote times; unquoted 22:00 is an int
+  quiet_hours_utc: null        # or {start: "22:00", end: "06:00"}
+
+watchdog:
+  timeout_s: 120
+
+# Not in spec section 15: connection details for the bundled postgres.
+# The password is read from a Docker secret file, never from this config.
+database:
+  host: postgres
+  port: 5432
+  name: basis_bot
+  user: basis_bot
+  password_file: /run/secrets/postgres_password
+
+logging:
+  level: INFO
